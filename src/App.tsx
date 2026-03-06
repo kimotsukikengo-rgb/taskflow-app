@@ -9,13 +9,23 @@ import {
   GoalsPage,
   SettingsPage,
 } from './pages';
+import { useUserStore, useProjectStore } from './store';
+
+function InitRoute() {
+  const { users } = useUserStore();
+  const { projects } = useProjectStore();
+
+  if (users.length === 0) return <Navigate to="/settings" replace />;
+  if (projects.length === 0) return <Navigate to="/projects" replace />;
+  return <Navigate to="/my/day" replace />;
+}
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Default redirect */}
-        <Route path="/" element={<Navigate to="/my/day" replace />} />
+        {/* Default redirect: guide new users through onboarding */}
+        <Route path="/" element={<InitRoute />} />
 
         {/* My pages */}
         <Route path="/my/day" element={<MyDayPage />} />

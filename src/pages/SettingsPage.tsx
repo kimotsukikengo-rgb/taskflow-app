@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { Trash2, UserPlus } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Layout } from '../components/layout';
 import { Button, Input, Select, Modal, Avatar } from '../components/ui';
-import { useSettingsStore, useUserStore } from '../store';
+import { useSettingsStore, useUserStore, useProjectStore } from '../store';
 
 export function SettingsPage() {
   const { appSettings, notificationSettings, updateAppSettings, updateNotificationSettings } = useSettingsStore();
   const { users, addUser, deleteUser, getCurrentUser, setCurrentUser } = useUserStore();
+  const { projects } = useProjectStore();
+  const navigate = useNavigate();
   const currentUser = getCurrentUser();
 
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
@@ -14,12 +17,14 @@ export function SettingsPage() {
 
   const handleAddUser = () => {
     if (newUserData.name && newUserData.email) {
-      const newUser = addUser(newUserData);
-      if (users.length === 0) {
-        setCurrentUser(newUser.id);
-      }
+      const isFirstUser = users.length === 0;
+      addUser(newUserData);
       setNewUserData({ name: '', email: '' });
       setIsUserModalOpen(false);
+      // 最初のメンバー追加後はプロジェクト作成へ誘導
+      if (isFirstUser && projects.length === 0) {
+        navigate('/projects');
+      }
     }
   };
 

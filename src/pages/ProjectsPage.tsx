@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, AlertCircle } from 'lucide-react';
 import { Layout } from '../components/layout';
 import { Button, Input, Textarea, Modal, ProgressRing } from '../components/ui';
 import { useProjectStore, useTaskStore, useUserStore } from '../store';
@@ -69,10 +69,21 @@ export function ProjectsPage() {
 
   return (
     <Layout title="プロジェクト">
+      {/* Warning when no current user */}
+      {!currentUser && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+          <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium text-amber-800">先に「設定」でメンバーを追加してください</p>
+            <p className="text-sm text-amber-700 mt-1">メンバー登録後にプロジェクトを作成できます。</p>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <p className="text-slate-500">{projects.length}個のプロジェクト</p>
-        <Button onClick={() => handleOpenModal()}>
+        <Button onClick={() => handleOpenModal()} disabled={!currentUser}>
           <Plus className="w-4 h-4 mr-2" />
           新規プロジェクト
         </Button>
