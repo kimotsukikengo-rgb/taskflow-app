@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
+import { AlertCircle } from 'lucide-react';
 import type { Task, TaskStatus, Priority } from '../../types';
 import { Button, Input, Textarea, Select } from '../ui';
 import { useUserStore, useProjectStore } from '../../store';
@@ -58,12 +59,26 @@ export function TaskForm({ task, projectId, onSubmit, onCancel }: TaskFormProps)
   });
 
   const [tagInput, setTagInput] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const userOptions = users.map((u) => ({ value: u.id, label: u.name }));
   const projectOptions = projects.map((p) => ({ value: p.id, label: p.title }));
 
+  const noUsers = users.length === 0;
+  const noProjects = projects.length === 0;
+
   const handleChange = (field: keyof TaskFormData, value: unknown) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if (errors[field]) setErrors((prev) => ({ ...prev, [field]: '' }));
+  };
+
+  const validate = () => {
+    const newErrors: Record<string, string> = {};
+    if (!formData.title.trim()) newErrors.title = 'タイトルは必須です';
+    if (!formData.projectId) newErrors.projectId = 'プロジェクトを選択してください';
+    if (!formData.assigneeId) newErrors.assigneeId = '担当者を選択してください';
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   const handleAddTag = () => {
@@ -85,21 +100,46 @@ export function TaskForm({ task, projectId, onSubmit, onCancel }: TaskFormProps)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    if (validate()) {
+      onSubmit(formData);
+    }
   };
+
+  // プロジェクトまたはユーザーが未登録の場合
+  if (noUsers || noProjects) {
+    return (
+      <div className="space-y-4">
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-amber-800">タスクを作成する前に設定が必要です</p>
+              <ul className="mt-2 space-y-1 text-sm text-amber-700">
+                {noUsers && <li>① 左メニューの「設定」でメンバーを追加してください</li>}
+                {noProjects && <li>{noUsers ? '②' : '①'} 左メニューの「プロジェクト」でプロジェクトを作成してください</li>}
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button type="button" variant="secondary" onClick={onCancel}>
+            閉じる
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* タイトル */}
       <Input
         label="タイトル"
         value={formData.title}
         onChange={(e) => handleChange('title', e.target.value)}
         placeholder="タスク名を入力"
-        required
+        error={errors.title}
       />
 
-      {/* 説明 */}
       <Textarea
         label="説明"
         value={formData.description}
@@ -108,32 +148,30 @@ export function TaskForm({ task, projectId, onSubmit, onCancel }: TaskFormProps)
         rows={3}
       />
 
-      {/* プロジェクト・担当者 */}
       <div className="grid grid-cols-2 gap-4">
         <Select
           label="プロジェクト"
           value={formData.projectId}
           onChange={(e) => handleChange('projectId', e.target.value)}
           options={projectOptions}
-          required
+          error={errors.projectId}
         />
         <Select
           label="担当者"
           value={formData.assigneeId}
           onChange={(e) => handleChange('assigneeId', e.target.value)}
           options={userOptions}
-          required
+          error={errors.assigneeId}
         />
       </div>
 
-      {/* 期日・開始日 */}
       <div className="grid grid-cols-2 gap-4">
         <Input
           type="date"
           label="期日"
           value={formData.dueDate}
           onChange={(e) => handleChange('dueDate', e.target.value)}
-          required
+          error={errors.dueDate}
         />
         <Input
           type="date"
@@ -143,7 +181,6 @@ export function TaskForm({ task, projectId, onSubmit, onCancel }: TaskFormProps)
         />
       </div>
 
-      {/* 状態・優先度 */}
       <div className="grid grid-cols-2 gap-4">
         <Select
           label="状態"
@@ -159,7 +196,6 @@ export function TaskForm({ task, projectId, onSubmit, onCancel }: TaskFormProps)
         />
       </div>
 
-      {/* 次アクション */}
       <Input
         label="次アクション"
         value={formData.nextAction}
@@ -167,7 +203,6 @@ export function TaskForm({ task, projectId, onSubmit, onCancel }: TaskFormProps)
         placeholder="次にやることを入力"
       />
 
-      {/* 見積時間 */}
       <Input
         type="number"
         label="見積時間（分）"
@@ -177,14 +212,13 @@ export function TaskForm({ task, projectId, onSubmit, onCancel }: TaskFormProps)
         min={0}
       />
 
-      {/* タグ */}
       <div>
         <label className="block text-sm font-medium text-slate-700 mb-1">タグ</label>
         <div className="flex gap-2">
           <Input
             value={tagInput}
             onChange={(e) => setTagInput(e.target.value)}
-            placeholder="タグを入力"
+            placeholder="タグを入力してEnter"
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();
@@ -211,7 +245,6 @@ export function TaskForm({ task, projectId, onSubmit, onCancel }: TaskFormProps)
         )}
       </div>
 
-      {/* ボタン */}
       <div className="flex justify-end gap-3 pt-4">
         <Button type="button" variant="secondary" onClick={onCancel}>
           キャンセル
